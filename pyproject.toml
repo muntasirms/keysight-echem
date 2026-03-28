@@ -1,0 +1,8 @@
+[project]
+name = "keysight-echem"
+version = "0.1.0"
+dependencies = ["pyvisa", "matplotlib"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
