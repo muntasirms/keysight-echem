@@ -1,4 +1,4 @@
-# keysight-b2901
+# keysight-echem
 
 A Python library for running electrochemical experiments from the Keysight B2901A / B2901BL Source-Measure Unit (SMU). Provides a clean interface for common galvanostatic and potentiostatic techniques, with built-in CSV logging, live plotting, and hardware safety limits.
 
@@ -7,7 +7,7 @@ Designed for 4-wire (Kelvin) sensing with the counter/sense terminals connected 
 ## Installation
 
 ```bash
-pip install keysight-b2901
+pip install keysight-echem
 ```
 
 ## Supported methods
