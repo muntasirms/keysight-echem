@@ -26,6 +26,7 @@ All methods accept an optional `LivePlotter` for real-time V and I strip-charts,
 ## Usage
 
 ### Finding your instrument address
+Note: you may need to install Keysight IO Libraries Suite for your SMU to be detected as an instrument via pyserial/pyvisa
 
 ```python
 import pyvisa
