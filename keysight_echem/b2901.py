@@ -1,5 +1,5 @@
 """
-keysight_echem_b2901.py
+keysight_b2901.py
 =================
 Production-ready Python library for electrochemical measurements using the
 Keysight B2901A / B2901BL Source-Measure Unit (SMU).
@@ -664,9 +664,11 @@ class KeysightB2901:
         self._setup_current_source(current, voltage_compliance)
         self._output_on()
         print(f'\n[CC] I={current:+.4g} A  duration={duration} s  SR={sample_rate} Hz')
-        self._run_loop(logger, status, sample_rate, plotter=plotter, duration=duration)
+        result = self._run_loop(logger, status, sample_rate, plotter=plotter, duration=duration)
         self._output_off()
         print('[CC] Done.')
+
+        return result
 
     # -------------------------------------------------------------------------
 
@@ -702,10 +704,11 @@ class KeysightB2901:
         self._setup_voltage_source(voltage, current_compliance)
         self._output_on()
         print(f'\n[CV] V={voltage:+.4g} V  duration={duration} s  SR={sample_rate} Hz')
-        self._run_loop(logger, status, sample_rate, plotter=plotter, duration=duration)
+        result = self._run_loop(logger, status, sample_rate, plotter=plotter, duration=duration)
         self._output_off()
         print('[CV] Done.')
 
+        return result
     # -------------------------------------------------------------------------
 
     def constant_current_until_cutoff(
@@ -752,7 +755,7 @@ class KeysightB2901:
             f'Vhi={voltage_cutoff_high} V  Vlo={voltage_cutoff_low} V'
             + (f'  max={max_duration} s' if max_duration else '')
         )
-        self._run_loop(
+        result = self._run_loop(
             logger, status, sample_rate,
             plotter=plotter,
             duration=max_duration,
@@ -762,6 +765,7 @@ class KeysightB2901:
         self._output_off()
         print('[CC->cutoff] Done.')
 
+        return result
     # -------------------------------------------------------------------------
 
     def constant_voltage_until_cutoff(
@@ -807,7 +811,7 @@ class KeysightB2901:
             f'Ihi={current_cutoff_high} A  Ilo={current_cutoff_low} A'
             + (f'  max={max_duration} s' if max_duration else '')
         )
-        self._run_loop(
+        result = self._run_loop(
             logger, status, sample_rate,
             plotter=plotter,
             duration=max_duration,
@@ -816,6 +820,8 @@ class KeysightB2901:
         )
         self._output_off()
         print('[CV->cutoff] Done.')
+
+        return result
 
     # -------------------------------------------------------------------------
 
@@ -1067,14 +1073,51 @@ if __name__ == '__main__':
     # Example 1 — constant current with live plot
     # -------------------------------------------
     ADDR = 'USB0::0x2A8D::0x9101::MY63320360::INSTR'
+    experimentDirectory = 'C:\\Users\Researcher\Desktop\Muntasir\exp\keysightControl\experiments\PulseRelaxTesting\\0.05M NaOH 2M NACl\CapLoopingTitration'
+    csv_filename = f'{experimentDirectory}\\6gZnO 12wtG 8wtAC GITT Static Pulsing .01mAcm2 5sP 20mR HgHgO.csv'  # '10percCB1.5GA6MNaOHStatic2.csv' 3.33s RT 2.0916 mLmin
+    ocp_upper_cutoff = -1.3 + .2
+    ocp_lower_cutoff = -1.3 - .2
+    charge_sign = -1
 
-    plotter = LivePlotter(title='CC Hold', current_unit='mA')
+    plotter = LivePlotter(title='GITT Cycle Hold Fe', current_unit='mA')
     with KeysightB2901(ADDR) as smu:
-        with DataLogger('cc_hold.csv') as log:
-            smu.constant_current(
-                current=0.1, duration=60, sample_rate=10,
-                voltage_compliance=5.0, logger=log, plotter=plotter,
+        with DataLogger(csv_filename) as log:
+
+            smu.constant_voltage(
+                voltage=-1.5, duration=200, sample_rate=2,
+                current_compliance=2.0, logger=log, plotter=plotter,
             )
+
+            # smu.cyclic_voltammetry(v_start=-.1,v_low=-.5,v_high=.2,scan_rate=.1,current_compliance=.1,logger=log,plotter=plotter,num_cycles=10)
+            # pulse2 = smu.constant_current(
+            #     current=-.03, duration=300, sample_rate=10,
+            #     voltage_compliance=2.0, logger=log, plotter=plotter,
+            # )
+
+            pulse2 = smu.constant_current(
+                current=0.00, duration=300, sample_rate=1,
+                voltage_compliance=2.0, logger=log, plotter=plotter,
+            )
+
+            while True:
+                pulse1 = smu.constant_current(
+                    current=0.03*charge_sign, duration=5, sample_rate=10,
+                    voltage_compliance=2.0, logger=log, plotter=plotter,
+                )
+
+                pulse2 = smu.constant_current(
+                    current=0.00, duration=1200, sample_rate=1,
+                    voltage_compliance=2.0, logger=log, plotter=plotter,
+                )
+
+                last_ocp = pulse2.voltage
+
+                if last_ocp <= ocp_lower_cutoff:
+                    charge_sign = 1
+                elif last_ocp >= ocp_upper_cutoff:
+                    charge_sign = -1
+
+
             # smu.constant_voltage(4,40,10,.1,log,plotter=plotter)
     # plotter.save('cc_hold.png')
     # plotter.keep_open()
